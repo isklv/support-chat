@@ -1,0 +1,29 @@
+services:
+  support-chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: support-chat
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - APP_URL=http://localhost:8080
+      - DB_DRIVER=sqlite
+      - DB_DSN=/app/data/support.db
+      - STATIC_DIR=/app/static
+      - ALLOWED_ORIGINS=*
+      # Telegram Bot Configuration
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - TELEGRAM_MODE=${TELEGRAM_MODE:-polling} # polling (default, works locally without domain) or webhook
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+      # Optional: SMTP for user reply notifications
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+    volumes:
+      - ./data:/app/data

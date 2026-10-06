@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Пример встраивания виджета (HTML / Landing)</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 60px 20px;
+      background: #f1f5f9;
+      color: #1e293b;
+      display: flex;
+      justify-content: center;
+    }
+    .card {
+      background: #ffffff;
+      padding: 40px;
+      border-radius: 16px;
+      max-width: 640px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    }
+    h1 { margin-top: 0; color: #0f172a; font-size: 24px; }
+    p { line-height: 1.6; }
+    code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🚀 Пример встраивания виджета на любой сайт</h1>
+    <p>Для добавления виджета на лендинг, сайт на Tilda, WordPress или в любой HTML-файл достаточно добавить одну строчку перед закрывающим тегом <code>&lt;/body&gt;</code>:</p>
+
+    <!-- Встраивание виджета одной строчкой: -->
+    <script
+      src="http://localhost:8080/widget.js"
+      data-api="http://localhost:8080"
+      data-title="Служба заботы"
+      data-color="#2563eb"
+      data-position="bottom-right"
+      data-lang="ru">
+    </script>
+  </div>
+</body>
+</html>

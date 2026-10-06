@@ -1,0 +1,28 @@
+# Go
+backend/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+data/
+*.db
+*.db-journal
+
+# Node
+node_modules/
+dist/
+.pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# OS & Editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
