@@ -107,6 +107,87 @@ func (s *Server) Routes() http.Handler {
 		}
 	})
 
+	// Bot management endpoints
+	mux.HandleFunc("/api/v1/admin/bots", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			s.handleAdminBotsList(w, r)
+		case http.MethodPost:
+			s.handleAdminBotsCreate(w, r)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+		}
+	})
+
+	mux.HandleFunc("/api/v1/admin/bots/test", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			s.handleAdminBotsTestRaw(w, r)
+		} else {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+		}
+	})
+
+	mux.HandleFunc("/api/v1/admin/bots/", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.Trim(r.URL.Path, "/")
+		parts := strings.Split(path, "/")
+		// parts: [api, v1, admin, bots, {id}, ...]
+		if len(parts) < 5 {
+			writeError(w, http.StatusBadRequest, "invalid_path")
+			return
+		}
+		id := parts[4]
+		if len(parts) == 5 {
+			switch r.Method {
+			case http.MethodGet:
+				s.handleAdminBotGet(w, r, id)
+			case http.MethodPut, http.MethodPatch:
+				s.handleAdminBotUpdate(w, r, id)
+			case http.MethodDelete:
+				s.handleAdminBotDelete(w, r, id)
+			default:
+				writeError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+			}
+			return
+		}
+		action := parts[5]
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+			return
+		}
+		switch action {
+		case "default":
+			s.handleAdminBotSetDefault(w, r, id)
+		case "toggle":
+			s.handleAdminBotToggle(w, r, id)
+		case "test":
+			s.handleAdminBotTest(w, r, id)
+		default:
+			writeError(w, http.StatusNotFound, "not_found")
+		}
+	})
+
+	// Admin Web Console route
+	mux.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/admin/", http.StatusFound)
+	})
+	mux.HandleFunc("/admin/", func(w http.ResponseWriter, r *http.Request) {
+		adminFile := filepath.Join(s.cfg.StaticDir, "admin.html")
+		if _, err := os.Stat(adminFile); err == nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-cache")
+			http.ServeFile(w, r, adminFile)
+			return
+		}
+		adminIdx := filepath.Join(s.cfg.StaticDir, "admin", "index.html")
+		if _, err := os.Stat(adminIdx); err == nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-cache")
+			http.ServeFile(w, r, adminIdx)
+			return
+		}
+		http.NotFound(w, r)
+	})
+
 	// Static files: widget.js, styles, demo page
 	staticDir := s.cfg.StaticDir
 	if info, err := os.Stat(staticDir); err == nil && info.IsDir() {

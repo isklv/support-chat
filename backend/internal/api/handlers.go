@@ -270,3 +270,155 @@ func (s *Server) handleAdminSupportAttachment(w http.ResponseWriter, r *http.Req
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	_, _ = w.Write(a.Data)
 }
+
+// Admin Bot Handlers
+
+func (s *Server) handleAdminBotsList(w http.ResponseWriter, r *http.Request) {
+	list, err := s.service.ListBots(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed_to_list_bots")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"bots": list,
+	})
+}
+
+func (s *Server) handleAdminBotsCreate(w http.ResponseWriter, r *http.Request) {
+	var in support.CreateBotInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body")
+		return
+	}
+	bot, err := s.service.CreateBot(r.Context(), in)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"bot": bot,
+	})
+}
+
+func (s *Server) handleAdminBotsTestRaw(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Token   string `json:"token"`
+		BaseURL string `json:"base_url"`
+		Proxy   string `json:"proxy"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body")
+		return
+	}
+	user, err := s.service.TestBotConfig(r.Context(), req.Token, req.BaseURL, req.Proxy)
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok":    false,
+			"error": err.Error(),
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok":   true,
+		"user": user,
+	})
+}
+
+func (s *Server) handleAdminBotGet(w http.ResponseWriter, r *http.Request, id string) {
+	bot, err := s.service.GetBot(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, support.ErrBotNotFound) {
+			writeError(w, http.StatusNotFound, "bot_not_found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"bot": bot,
+	})
+}
+
+func (s *Server) handleAdminBotUpdate(w http.ResponseWriter, r *http.Request, id string) {
+	var in support.UpdateBotInput
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body")
+		return
+	}
+	bot, err := s.service.UpdateBot(r.Context(), id, in)
+	if err != nil {
+		if errors.Is(err, support.ErrBotNotFound) {
+			writeError(w, http.StatusNotFound, "bot_not_found")
+			return
+		}
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"bot": bot,
+	})
+}
+
+func (s *Server) handleAdminBotDelete(w http.ResponseWriter, r *http.Request, id string) {
+	err := s.service.DeleteBot(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, support.ErrBotNotFound) {
+			writeError(w, http.StatusNotFound, "bot_not_found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed_to_delete_bot")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok": true,
+	})
+}
+
+func (s *Server) handleAdminBotSetDefault(w http.ResponseWriter, r *http.Request, id string) {
+	bot, err := s.service.SetDefaultBot(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, support.ErrBotNotFound) {
+			writeError(w, http.StatusNotFound, "bot_not_found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed_to_set_default")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"bot": bot,
+	})
+}
+
+func (s *Server) handleAdminBotToggle(w http.ResponseWriter, r *http.Request, id string) {
+	bot, err := s.service.ToggleBotActive(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, support.ErrBotNotFound) {
+			writeError(w, http.StatusNotFound, "bot_not_found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed_to_toggle_active")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"bot": bot,
+	})
+}
+
+func (s *Server) handleAdminBotTest(w http.ResponseWriter, r *http.Request, id string) {
+	user, err := s.service.TestBotByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, support.ErrBotNotFound) {
+			writeError(w, http.StatusNotFound, "bot_not_found")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok":    false,
+			"error": err.Error(),
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"ok":   true,
+		"user": user,
+	})
+}

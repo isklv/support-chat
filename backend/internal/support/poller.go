@@ -14,17 +14,9 @@ import (
 
 // RunPoller runs the Telegram long-polling loop.
 func (s *Service) RunPoller(ctx context.Context) {
-	if s.tg == nil {
-		return
-	}
-
-	log.Println("support: deleting webhook before starting long polling...")
-	if err := s.tg.DeleteWebhook(ctx); err != nil {
-		log.Printf("support: failed to delete webhook: %v", err)
-	}
-
 	log.Println("support: long-polling worker started")
 	var offset int64
+	var currentToken string
 
 	for {
 		select {
@@ -33,8 +25,21 @@ func (s *Service) RunPoller(ctx context.Context) {
 		default:
 		}
 
+		tg := s.Telegram()
+		if tg == nil {
+			time.Sleep(3 * time.Second)
+			continue
+		}
+
+		if tg.Token != currentToken {
+			currentToken = tg.Token
+			offset = 0
+			log.Println("support: deleting webhook before starting long polling...")
+			_ = tg.DeleteWebhook(ctx)
+		}
+
 		pollCtx, cancel := context.WithTimeout(ctx, 35*time.Second)
-		updates, err := s.tg.GetUpdates(pollCtx, offset, 25)
+		updates, err := tg.GetUpdates(pollCtx, offset, 25)
 		cancel()
 
 		if err != nil {
@@ -58,8 +63,9 @@ func (s *Service) RunPoller(ctx context.Context) {
 
 // HandleUpdate processes an update received either via Webhook or Polling.
 func (s *Service) HandleUpdate(ctx context.Context, u Update) error {
+	tg := s.Telegram()
 	m := u.Message
-	if s.tg == nil || m == nil || m.Chat.ID != s.tg.ChatID || m.From == nil || m.From.IsBot || m.ForumTopicCreated != nil {
+	if tg == nil || m == nil || m.Chat.ID != tg.ChatID || m.From == nil || m.From.IsBot || m.ForumTopicCreated != nil {
 		return nil
 	}
 
@@ -93,7 +99,7 @@ func (s *Service) HandleUpdate(ctx context.Context, u Update) error {
 	}
 
 	if fileID != "" {
-		data, err := s.tg.Download(ctx, fileID, MaxImageBytes)
+		data, err := tg.Download(ctx, fileID, MaxImageBytes)
 		if err == nil {
 			if ct, err := detectImage(data); err == nil {
 				img, contentType = data, ct

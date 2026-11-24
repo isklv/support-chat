@@ -45,6 +45,7 @@ func Init(driver, dsn string) (*gorm.DB, error) {
 
 	// Auto migrate tables
 	if err := database.AutoMigrate(
+		&Bot{},
 		&SupportThread{},
 		&SupportMessage{},
 		&SupportAttachment{},

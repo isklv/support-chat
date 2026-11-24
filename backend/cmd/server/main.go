@@ -41,21 +41,12 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	// Launch Telegram background workers if bot is configured
-	if tg != nil {
-		go service.RunRelay(ctx)
+	// Initialize bots from database or configuration
+	service.InitBots(ctx)
 
-		if cfg.TelegramMode == "webhook" && cfg.WebhookURL != "" {
-			log.Printf("telegram: registering webhook at %s", cfg.WebhookURL)
-			if err := tg.SetWebhook(ctx, cfg.WebhookURL); err != nil {
-				log.Printf("telegram: setWebhook failed: %v", err)
-			}
-		} else {
-			// Default to long-polling mode
-			log.Println("telegram: running in polling mode")
-			go service.RunPoller(ctx)
-		}
-	}
+	// Launch Telegram background workers (dynamically adapt when bots are added or edited)
+	go service.RunRelay(ctx)
+	go service.RunPoller(ctx)
 
 	httpServer := &http.Server{
 		Addr:         ":" + cfg.Port,

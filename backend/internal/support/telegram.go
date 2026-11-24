@@ -24,7 +24,7 @@ type Telegram struct {
 }
 
 func NewTelegram(token string, chatID int64, base, proxy string) *Telegram {
-	if strings.TrimSpace(token) == "" || chatID == 0 {
+	if strings.TrimSpace(token) == "" {
 		return nil
 	}
 	if base == "" {
@@ -51,13 +51,42 @@ func (t *Telegram) WebhookSecret() string {
 	return hex.EncodeToString(sum[:16])
 }
 
-// Telegram Bot API data models
-type tgUser struct {
-	ID        int64  `json:"id"`
-	IsBot     bool   `json:"is_bot"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Username  string `json:"username"`
+// TelegramUser represents a Telegram user or bot returned by getMe or in messages.
+type TelegramUser struct {
+	ID                      int64  `json:"id"`
+	IsBot                   bool   `json:"is_bot"`
+	FirstName               string `json:"first_name"`
+	LastName                string `json:"last_name"`
+	Username                string `json:"username"`
+	CanJoinGroups           bool   `json:"can_join_groups"`
+	CanReadAllGroupMessages bool   `json:"can_read_all_group_messages"`
+	SupportsInlineQueries   bool   `json:"supports_inline_queries"`
+}
+
+type tgUser = TelegramUser
+
+// GetMe calls Telegram getMe to verify bot credentials and get info.
+func (t *Telegram) GetMe(ctx context.Context) (*TelegramUser, error) {
+	var out TelegramUser
+	if err := t.call(ctx, "getMe", nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// CheckBotCredentials verifies bot credentials against Telegram API without saving.
+func CheckBotCredentials(ctx context.Context, token, base, proxy string) (*TelegramUser, error) {
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, fmt.Errorf("bot token is empty")
+	}
+	tg := NewTelegram(token, 0, base, proxy)
+	if tg == nil {
+		return nil, fmt.Errorf("invalid bot parameters")
+	}
+	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	return tg.GetMe(checkCtx)
 }
 
 type tgChat struct {

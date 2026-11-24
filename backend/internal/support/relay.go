@@ -3,6 +3,7 @@ package support
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -19,19 +20,17 @@ func (s *Service) Kick() {
 }
 
 func (s *Service) RunRelay(ctx context.Context) {
-	if s.tg == nil {
-		log.Println("support: telegram bot not configured; relay idle")
-		return
-	}
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	log.Println("support: relay worker started")
 	for {
-		if n, err := s.RelayPending(ctx); err != nil {
-			log.Printf("support: relay pending failed: %v", err)
-		} else if n > 0 {
-			log.Printf("support: relayed %d messages to Telegram", n)
+		if tg := s.Telegram(); tg != nil {
+			if n, err := s.RelayPending(ctx); err != nil {
+				log.Printf("support: relay pending failed: %v", err)
+			} else if n > 0 {
+				log.Printf("support: relayed %d messages to Telegram", n)
+			}
 		}
 
 		select {
@@ -44,7 +43,8 @@ func (s *Service) RunRelay(ctx context.Context) {
 }
 
 func (s *Service) RelayPending(ctx context.Context) (int, error) {
-	if s.tg == nil {
+	tg := s.Telegram()
+	if tg == nil {
 		return 0, nil
 	}
 	var pending []db.SupportMessage
@@ -75,6 +75,10 @@ func (s *Service) RelayPending(ctx context.Context) (int, error) {
 }
 
 func (s *Service) relay(ctx context.Context, m db.SupportMessage) error {
+	tg := s.Telegram()
+	if tg == nil {
+		return errors.New("support: telegram client not available")
+	}
 	var t db.SupportThread
 	if err := s.db.WithContext(ctx).First(&t, "id = ?", m.ThreadID).Error; err != nil {
 		return err
@@ -99,9 +103,9 @@ func (s *Service) relay(ctx context.Context, m db.SupportMessage) error {
 		if err := s.db.WithContext(ctx).First(&a, "message_id = ?", m.ID).Error; err != nil {
 			return err
 		}
-		mid, err = s.tg.SendPhoto(ctx, topic, text, a.Data, a.ContentType)
+		mid, err = tg.SendPhoto(ctx, topic, text, a.Data, a.ContentType)
 	} else {
-		mid, err = s.tg.Send(ctx, topic, text)
+		mid, err = tg.Send(ctx, topic, text)
 	}
 	if err != nil {
 		return err
@@ -113,7 +117,11 @@ func (s *Service) relay(ctx context.Context, m db.SupportMessage) error {
 }
 
 func (s *Service) topicFor(ctx context.Context, t *db.SupportThread) (int64, error) {
-	if t.TelegramTopicID != nil && t.TelegramChatID != nil && *t.TelegramChatID == s.tg.ChatID {
+	tg := s.Telegram()
+	if tg == nil {
+		return 0, errors.New("support: telegram client not available")
+	}
+	if t.TelegramTopicID != nil && t.TelegramChatID != nil && *t.TelegramChatID == tg.ChatID {
 		return *t.TelegramTopicID, nil
 	}
 
@@ -122,13 +130,13 @@ func (s *Service) topicFor(ctx context.Context, t *db.SupportThread) (int64, err
 		who = t.Email
 	}
 	topicName := fmt.Sprintf("#%d %s", t.Number, who)
-	topic, err := s.tg.CreateTopic(ctx, topicName)
+	topic, err := tg.CreateTopic(ctx, topicName)
 	if err != nil {
 		log.Printf("support: could not create forum topic for %s (%v); sending to chat", topicName, err)
 		topic = 0
 	}
 
-	cardID, err := s.tg.Send(ctx, topic, s.card(t))
+	cardID, err := tg.Send(ctx, topic, s.card(t))
 	if err != nil {
 		return 0, err
 	}
@@ -146,7 +154,7 @@ func (s *Service) topicFor(ctx context.Context, t *db.SupportThread) (int64, err
 	_ = s.db.WithContext(ctx).Create(&sysMsg).Error
 
 	if topic != 0 {
-		chatID := s.tg.ChatID
+		chatID := tg.ChatID
 		if err := s.db.WithContext(ctx).Model(&db.SupportThread{}).Where("id = ?", t.ID).
 			Updates(map[string]any{"telegram_chat_id": chatID, "telegram_topic_id": topic}).Error; err != nil {
 			return 0, err

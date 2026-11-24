@@ -15,6 +15,7 @@ import (
 	"log"
 	"net/mail"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -39,12 +40,15 @@ var (
 	ErrNeedEmail    = errors.New("support: an email is required for the first message")
 	ErrNotFound     = errors.New("support: conversation not found")
 	ErrInvalidImage = errors.New("support: invalid image format or size")
+	ErrBotNotFound  = errors.New("support: bot not found")
+	ErrInvalidBot   = errors.New("support: invalid bot data")
 )
 
 type Service struct {
 	db   *gorm.DB
 	cfg  *config.Config
 	mail mailer.Mailer
+	mu   sync.RWMutex
 	tg   *Telegram
 	kick chan struct{}
 }
@@ -60,6 +64,8 @@ func NewService(database *gorm.DB, cfg *config.Config, m mailer.Mailer, tg *Tele
 }
 
 func (s *Service) Telegram() *Telegram {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.tg
 }
 
@@ -450,16 +456,18 @@ func (s *Service) Reply(ctx context.Context, id, operator, text string, img []by
 			caption := fmt.Sprintf("💬 %s: %s", operator, text)
 			var mid int64
 			var err error
-			if contentType != "" {
-				mid, err = s.tg.SendPhoto(c, *t.TelegramTopicID, caption, img, contentType)
-			} else {
-				mid, err = s.tg.Send(c, *t.TelegramTopicID, caption)
+			if tg := s.Telegram(); tg != nil {
+				if contentType != "" {
+					mid, err = tg.SendPhoto(c, *t.TelegramTopicID, caption, img, contentType)
+				} else {
+					mid, err = tg.Send(c, *t.TelegramTopicID, caption)
+				}
+				if err != nil {
+					log.Printf("support: console reply to telegram failed: %v", err)
+					return
+				}
+				s.db.Model(&db.SupportMessage{}).Where("id = ?", msg.ID).Update("telegram_message_id", mid)
 			}
-			if err != nil {
-				log.Printf("support: console reply to telegram failed: %v", err)
-				return
-			}
-			s.db.Model(&db.SupportMessage{}).Where("id = ?", msg.ID).Update("telegram_message_id", mid)
 		}()
 	}
 	return s.Get(ctx, id)
@@ -543,8 +551,10 @@ func (s *Service) SetStatus(ctx context.Context, id string, open bool, by string
 				if open {
 					label = "↩️ Reopened by "
 				}
-				_, _ = s.tg.Send(c, topic, label+by)
-				_ = s.tg.SetTopicOpen(c, topic, open)
+				if tg := s.Telegram(); tg != nil {
+					_, _ = tg.Send(c, topic, label+by)
+					_ = tg.SetTopicOpen(c, topic, open)
+				}
 			}()
 		}
 	}
@@ -599,5 +609,353 @@ func (s *Service) notifyEmail(t db.SupportThread, msg db.SupportMessage) {
 }
 
 func (s *Service) InThisChat(t *db.SupportThread) bool {
-	return s.tg != nil && t.TelegramTopicID != nil && t.TelegramChatID != nil && *t.TelegramChatID == s.tg.ChatID
+	tg := s.Telegram()
+	return tg != nil && t.TelegramTopicID != nil && t.TelegramChatID != nil && *t.TelegramChatID == tg.ChatID
+}
+
+type CreateBotInput struct {
+	Name        string `json:"name"`
+	Token       string `json:"token"`
+	ChatID      int64  `json:"chat_id"`
+	Mode        string `json:"mode"`
+	WebhookURL  string `json:"webhook_url"`
+	BaseURL     string `json:"base_url"`
+	Proxy       string `json:"proxy"`
+	IsDefault   bool   `json:"is_default"`
+	IsActive    bool   `json:"is_active"`
+	Description string `json:"description"`
+}
+
+type UpdateBotInput struct {
+	Name        *string `json:"name"`
+	Token       *string `json:"token"`
+	ChatID      *int64  `json:"chat_id"`
+	Mode        *string `json:"mode"`
+	WebhookURL  *string `json:"webhook_url"`
+	BaseURL     *string `json:"base_url"`
+	Proxy       *string `json:"proxy"`
+	IsDefault   *bool   `json:"is_default"`
+	IsActive    *bool   `json:"is_active"`
+	Description *string `json:"description"`
+}
+
+// InitBots seeds default bot from config if no bots exist in DB, and loads active bot.
+func (s *Service) InitBots(ctx context.Context) {
+	var count int64
+	s.db.WithContext(ctx).Model(&db.Bot{}).Count(&count)
+	if count == 0 && s.cfg.TelegramBotToken != "" && s.cfg.TelegramChatID != 0 {
+		log.Println("support: seeding initial Telegram bot from config into DB...")
+		now := time.Now().UTC()
+		b := db.Bot{
+			ID:          uuid.New().String(),
+			Name:        "Основной бот",
+			Token:       s.cfg.TelegramBotToken,
+			ChatID:      s.cfg.TelegramChatID,
+			Mode:        s.cfg.TelegramMode,
+			WebhookURL:  s.cfg.WebhookURL,
+			BaseURL:     s.cfg.TelegramBaseURL,
+			Proxy:       s.cfg.TelegramProxy,
+			IsDefault:   true,
+			IsActive:    true,
+			Description: "Создан автоматически из конфигурации окружения",
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+		// Try fetching bot info from Telegram
+		if u, err := CheckBotCredentials(ctx, b.Token, b.BaseURL, b.Proxy); err == nil && u != nil {
+			b.Username = u.Username
+			b.FirstName = u.FirstName
+		}
+		if err := s.db.WithContext(ctx).Create(&b).Error; err != nil {
+			log.Printf("support: failed to seed initial bot: %v", err)
+		} else {
+			log.Printf("support: seeded initial bot %s (@%s)", b.Name, b.Username)
+		}
+	}
+	s.ReloadTelegram(ctx)
+}
+
+// ReloadTelegram re-evaluates the active Telegram client from the database.
+func (s *Service) ReloadTelegram(ctx context.Context) {
+	var activeBot db.Bot
+	// Find active default bot
+	err := s.db.WithContext(ctx).Where("is_active = ? AND is_default = ?", true, true).First(&activeBot).Error
+	if err != nil {
+		// Fallback to any active bot
+		err = s.db.WithContext(ctx).Where("is_active = ?", true).Order("created_at ASC").First(&activeBot).Error
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if err == nil && activeBot.Token != "" && activeBot.ChatID != 0 {
+		tg := NewTelegram(activeBot.Token, activeBot.ChatID, activeBot.BaseURL, activeBot.Proxy)
+		s.tg = tg
+		log.Printf("support: telegram client reloaded for bot %q (@%s, group %d)", activeBot.Name, activeBot.Username, activeBot.ChatID)
+
+		if activeBot.Mode == "webhook" && activeBot.WebhookURL != "" {
+			go func() {
+				c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				if err := tg.SetWebhook(c, activeBot.WebhookURL); err != nil {
+					log.Printf("support: failed to set webhook for bot %s: %v", activeBot.Name, err)
+				}
+			}()
+		}
+	} else if s.cfg.TelegramBotToken != "" && s.cfg.TelegramChatID != 0 {
+		// Fallback to cfg
+		s.tg = NewTelegram(s.cfg.TelegramBotToken, s.cfg.TelegramChatID, s.cfg.TelegramBaseURL, s.cfg.TelegramProxy)
+		log.Println("support: telegram client fallback to config")
+	} else {
+		s.tg = nil
+		log.Println("support: no active telegram bot configured")
+	}
+}
+
+// ListBots returns all bots ordered by default status and creation date.
+func (s *Service) ListBots(ctx context.Context) ([]db.Bot, error) {
+	var list []db.Bot
+	if err := s.db.WithContext(ctx).Order("is_default DESC, created_at DESC").Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// GetBot returns a bot by ID.
+func (s *Service) GetBot(ctx context.Context, id string) (*db.Bot, error) {
+	var b db.Bot
+	if err := s.db.WithContext(ctx).First(&b, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrBotNotFound
+		}
+		return nil, err
+	}
+	return &b, nil
+}
+
+// CreateBot registers a new bot.
+func (s *Service) CreateBot(ctx context.Context, in CreateBotInput) (*db.Bot, error) {
+	in.Name = strings.TrimSpace(in.Name)
+	in.Token = strings.TrimSpace(in.Token)
+	if in.Name == "" || in.Token == "" {
+		return nil, errors.New("support: bot name and token are required")
+	}
+	if in.ChatID == 0 {
+		return nil, errors.New("support: group chat_id is required")
+	}
+	mode := strings.ToLower(strings.TrimSpace(in.Mode))
+	if mode != "webhook" {
+		mode = "polling"
+	}
+	baseURL := strings.TrimRight(strings.TrimSpace(in.BaseURL), "/")
+	if baseURL == "" {
+		baseURL = "https://api.telegram.org"
+	}
+	proxy := strings.TrimSpace(in.Proxy)
+	webhookURL := strings.TrimSpace(in.WebhookURL)
+
+	var username, firstName string
+	// Test bot token with Telegram
+	if u, err := CheckBotCredentials(ctx, in.Token, baseURL, proxy); err == nil && u != nil {
+		username = u.Username
+		firstName = u.FirstName
+	}
+
+	var count int64
+	s.db.WithContext(ctx).Model(&db.Bot{}).Count(&count)
+	isDefault := in.IsDefault
+	if count == 0 {
+		isDefault = true
+	}
+
+	if isDefault {
+		_ = s.db.WithContext(ctx).Model(&db.Bot{}).Where("1=1").Update("is_default", false).Error
+	}
+
+	now := time.Now().UTC()
+	b := db.Bot{
+		ID:          uuid.New().String(),
+		Name:        in.Name,
+		Token:       in.Token,
+		Username:    username,
+		FirstName:   firstName,
+		ChatID:      in.ChatID,
+		Mode:        mode,
+		WebhookURL:  webhookURL,
+		BaseURL:     baseURL,
+		Proxy:       proxy,
+		IsDefault:   isDefault,
+		IsActive:    in.IsActive,
+		Description: strings.TrimSpace(in.Description),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+
+	if err := s.db.WithContext(ctx).Create(&b).Error; err != nil {
+		return nil, err
+	}
+
+	s.ReloadTelegram(ctx)
+	s.Kick()
+	return &b, nil
+}
+
+// UpdateBot updates fields of an existing bot.
+func (s *Service) UpdateBot(ctx context.Context, id string, in UpdateBotInput) (*db.Bot, error) {
+	b, err := s.GetBot(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenChanged := false
+	if in.Name != nil && strings.TrimSpace(*in.Name) != "" {
+		b.Name = strings.TrimSpace(*in.Name)
+	}
+	if in.Token != nil && strings.TrimSpace(*in.Token) != "" && strings.TrimSpace(*in.Token) != b.Token {
+		b.Token = strings.TrimSpace(*in.Token)
+		tokenChanged = true
+	}
+	if in.ChatID != nil && *in.ChatID != 0 {
+		b.ChatID = *in.ChatID
+	}
+	if in.Mode != nil {
+		mode := strings.ToLower(strings.TrimSpace(*in.Mode))
+		if mode == "webhook" || mode == "polling" {
+			b.Mode = mode
+		}
+	}
+	if in.WebhookURL != nil {
+		b.WebhookURL = strings.TrimSpace(*in.WebhookURL)
+	}
+	if in.BaseURL != nil {
+		base := strings.TrimRight(strings.TrimSpace(*in.BaseURL), "/")
+		if base == "" {
+			base = "https://api.telegram.org"
+		}
+		b.BaseURL = base
+	}
+	if in.Proxy != nil {
+		b.Proxy = strings.TrimSpace(*in.Proxy)
+	}
+	if in.Description != nil {
+		b.Description = strings.TrimSpace(*in.Description)
+	}
+	if in.IsActive != nil {
+		b.IsActive = *in.IsActive
+	}
+	if in.IsDefault != nil && *in.IsDefault {
+		_ = s.db.WithContext(ctx).Model(&db.Bot{}).Where("id != ?", id).Update("is_default", false).Error
+		b.IsDefault = true
+	} else if in.IsDefault != nil && !*in.IsDefault {
+		b.IsDefault = false
+	}
+
+	if tokenChanged {
+		if u, err := CheckBotCredentials(ctx, b.Token, b.BaseURL, b.Proxy); err == nil && u != nil {
+			b.Username = u.Username
+			b.FirstName = u.FirstName
+		}
+	}
+
+	b.UpdatedAt = time.Now().UTC()
+	if err := s.db.WithContext(ctx).Save(b).Error; err != nil {
+		return nil, err
+	}
+
+	s.ReloadTelegram(ctx)
+	s.Kick()
+	return b, nil
+}
+
+// DeleteBot removes a bot from DB.
+func (s *Service) DeleteBot(ctx context.Context, id string) error {
+	b, err := s.GetBot(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.WithContext(ctx).Delete(b).Error; err != nil {
+		return err
+	}
+
+	if b.IsDefault {
+		var next db.Bot
+		if err := s.db.WithContext(ctx).Where("is_active = ?", true).Order("created_at ASC").First(&next).Error; err == nil {
+			s.db.WithContext(ctx).Model(&next).Update("is_default", true)
+		}
+	}
+
+	s.ReloadTelegram(ctx)
+	s.Kick()
+	return nil
+}
+
+// SetDefaultBot sets a bot as default.
+func (s *Service) SetDefaultBot(ctx context.Context, id string) (*db.Bot, error) {
+	b, err := s.GetBot(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.db.WithContext(ctx).Model(&db.Bot{}).Where("1=1").Update("is_default", false).Error
+	b.IsDefault = true
+	b.IsActive = true
+	b.UpdatedAt = time.Now().UTC()
+
+	if err := s.db.WithContext(ctx).Save(b).Error; err != nil {
+		return nil, err
+	}
+
+	s.ReloadTelegram(ctx)
+	s.Kick()
+	return b, nil
+}
+
+// ToggleBotActive toggles active status.
+func (s *Service) ToggleBotActive(ctx context.Context, id string) (*db.Bot, error) {
+	b, err := s.GetBot(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	b.IsActive = !b.IsActive
+	b.UpdatedAt = time.Now().UTC()
+
+	if err := s.db.WithContext(ctx).Save(b).Error; err != nil {
+		return nil, err
+	}
+
+	s.ReloadTelegram(ctx)
+	s.Kick()
+	return b, nil
+}
+
+// TestBotConfig checks credentials without saving.
+func (s *Service) TestBotConfig(ctx context.Context, token, base, proxy string) (*TelegramUser, error) {
+	return CheckBotCredentials(ctx, token, base, proxy)
+}
+
+// TestBotByID checks credentials and updates bot metadata and last_seen_at.
+func (s *Service) TestBotByID(ctx context.Context, id string) (*TelegramUser, error) {
+	b, err := s.GetBot(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := CheckBotCredentials(ctx, b.Token, b.BaseURL, b.Proxy)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	b.LastSeenAt = &now
+	if u.Username != "" {
+		b.Username = u.Username
+	}
+	if u.FirstName != "" {
+		b.FirstName = u.FirstName
+	}
+	_ = s.db.WithContext(ctx).Save(b).Error
+
+	return u, nil
 }

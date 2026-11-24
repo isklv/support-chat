@@ -21,6 +21,7 @@ RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
 
 COPY --from=backend-builder /app/server /app/server
+COPY backend/static/ /app/static/
 COPY --from=widget-builder /app/widget/dist /app/static
 COPY --from=widget-builder /app/widget/index.html /app/static/demo.html
 

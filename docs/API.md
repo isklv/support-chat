@@ -127,3 +127,133 @@
   "telegram": true
 }
 ```
+
+---
+
+## Административные эндпоинты управления ботами
+
+Веб-интерфейс панели управления доступен по адресу: `/admin` (или `/admin/`).
+
+### 1. Список ботов
+`GET /api/v1/admin/bots`
+
+**Ответ (200 OK):**
+```json
+{
+  "bots": [
+    {
+      "id": "c1f7b4e2-...",
+      "name": "Основной бот поддержки",
+      "token": "1234567890:ABC...",
+      "username": "support_bot",
+      "first_name": "Support Bot",
+      "chat_id": -1001234567890,
+      "mode": "polling",
+      "webhook_url": "",
+      "base_url": "https://api.telegram.org",
+      "proxy": "",
+      "is_default": true,
+      "is_active": true,
+      "description": "Основной бот для сайта",
+      "created_at": "2026-11-23T19:00:00Z",
+      "updated_at": "2026-11-23T19:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 2. Добавление нового бота
+`POST /api/v1/admin/bots`
+
+**Тело запроса (JSON):**
+```json
+{
+  "name": "Бот поддержки EN",
+  "token": "7123456789:ABCdefGHI...",
+  "chat_id": -1009876543210,
+  "mode": "polling",
+  "webhook_url": "",
+  "base_url": "https://api.telegram.org",
+  "proxy": "",
+  "is_default": false,
+  "is_active": true,
+  "description": "Бот для англоязычных пользователей"
+}
+```
+
+**Ответ (201 Created):**
+```json
+{
+  "bot": { ... }
+}
+```
+
+---
+
+### 3. Получение информации о боте
+`GET /api/v1/admin/bots/{id}`
+
+---
+
+### 4. Редактирование бота
+`PUT /api/v1/admin/bots/{id}`
+
+**Тело запроса (JSON):**
+Любые изменяемые поля: `name`, `token`, `chat_id`, `mode`, `webhook_url`, `base_url`, `proxy`, `is_active`, `is_default`, `description`.
+
+---
+
+### 5. Удаление бота
+`DELETE /api/v1/admin/bots/{id}`
+
+**Ответ (200 OK):**
+```json
+{ "ok": true }
+```
+
+---
+
+### 6. Назначение бота основным (Default)
+`POST /api/v1/admin/bots/{id}/default`
+
+---
+
+### 7. Включение / выключение бота
+`POST /api/v1/admin/bots/{id}/toggle`
+
+---
+
+### 8. Проверка токена без сохранения
+`POST /api/v1/admin/bots/test`
+
+**Тело запроса (JSON):**
+```json
+{
+  "token": "1234567890:ABCdef...",
+  "base_url": "https://api.telegram.org",
+  "proxy": ""
+}
+```
+
+**Ответ (200 OK):**
+```json
+{
+  "ok": true,
+  "user": {
+    "id": 1234567890,
+    "is_bot": true,
+    "first_name": "Support Bot",
+    "username": "support_bot",
+    "can_join_groups": true,
+    "can_read_all_group_messages": false,
+    "supports_inline_queries": false
+  }
+}
+```
+
+---
+
+### 9. Проверка соединения сохраненного бота
+`POST /api/v1/admin/bots/{id}/test`

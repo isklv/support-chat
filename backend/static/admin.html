@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Управление ботами • Support Chat</title>
+  <style>
+    :root {
+      --bg-body: #090d16;
+      --bg-surface: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #243248;
+      --bg-input: #131c2e;
+      --border-color: #334155;
+      --border-light: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-tg: #229ed9;
+      --accent-tg-hover: #1b87ba;
+      --accent-primary: #3b82f6;
+      --accent-primary-hover: #2563eb;
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-danger: #ef4444;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-light);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #229ed9, #3b82f6);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(34, 158, 217, 0.4);
+    }
+
+    .brand-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+    }
+
+    .brand-text h1 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+
+    /* Stats Banner */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .stat-icon.green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .stat-icon.tg { background: rgba(34, 158, 217, 0.15); color: #38bdf8; }
+    .stat-icon.amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+
+    .stat-info {
+      overflow: hidden;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .search-filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 320px;
+      min-width: 200px;
+    }
+
+    .search-input-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 9px 12px 9px 36px;
+      color: var(--text-main);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-surface);
+      padding: 3px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-icon {
+      padding: 9px 10px;
+    }
+
+    .btn-sm {
+      padding: 6px 10px;
+      font-size: 12.5px;
+    }
+
+    /* Bots Grid */
+    .bots-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+    }
+
+    .bot-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .bot-card:hover {
+      border-color: rgba(59, 130, 246, 0.35);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .bot-card.is-default {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.03) 0%, var(--bg-card) 100%);
+    }
+
+    .bot-card.is-inactive {
+      opacity: 0.72;
+      border-style: dashed;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .bot-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(34, 158, 217, 0.2), rgba(59, 130, 246, 0.3));
+      border: 1px solid rgba(34, 158, 217, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #38bdf8;
+      flex-shrink: 0;
+    }
+
+    .bot-title-area {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .bot-name {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bot-username {
+      font-size: 13px;
+      color: var(--accent-tg);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 3px;
+      font-weight: 500;
+    }
+
+    .bot-username:hover {
+      text-decoration: underline;
+    }
+
+    .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      letter-spacing: 0.01em;
+    }
+
+    .badge-default {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .badge-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-inactive {
+      background: rgba(100, 116, 139, 0.2);
+      color: #94a3b8;
+      border: 1px solid rgba(100, 116, 139, 0.3);
+    }
+
+    .badge-polling {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .badge-webhook {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    /* Bot Fields Table */
+    .card-fields {
+      background: var(--bg-surface);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .field-label {
+      color: var(--text-muted);
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .field-val {
+      color: var(--text-main);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .token-text {
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .inline-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 3px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .inline-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .bot-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      line-height: 1.45;
+      font-style: italic;
+    }
+
+    .card-footer {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      background: var(--bg-card);
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 60px 24px;
+      text-align: center;
+      grid-column: 1 / -1;
+    }
+
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #60a5fa;
+    }
+
+    .empty-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .empty-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      max-width: 440px;
+      margin: 0 auto 24px;
+    }
+
+    /* Setup Guide Accordion */
+    .guide-section {
+      margin-top: 40px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .guide-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+
+    .guide-header:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .guide-title {
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-main);
+    }
+
+    .guide-content {
+      padding: 0 20px 20px;
+      display: none;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .guide-content.open {
+      display: block;
+      padding-top: 18px;
+    }
+
+    .guide-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .guide-step {
+      background: var(--bg-surface);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .step-num {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background: var(--accent-primary);
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 24px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .step-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    .step-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .step-desc a {
+      color: var(--accent-tg);
+      text-decoration: none;
+    }
+
+    .step-desc a:hover {
+      text-decoration: underline;
+    }
+
+    /* Modal Overlay & Dialog */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-dialog {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      max-width: 580px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.96) translateY(10px);
+      transition: transform 0.2s ease;
+    }
+
+    .modal-overlay.open .modal-dialog {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 7px;
+    }
+
+    .form-label .req {
+      color: var(--accent-danger);
+    }
+
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .input-with-button {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-with-button .form-input {
+      flex: 1;
+    }
+
+    .radio-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .radio-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      transition: all 0.15s ease;
+    }
+
+    .radio-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .radio-card.selected {
+      border-color: var(--accent-primary);
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    .radio-card input {
+      margin-top: 3px;
+    }
+
+    .radio-card-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .radio-card-desc {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      margin-top: 14px;
+    }
+
+    .checkbox-group input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent-primary);
+      cursor: pointer;
+    }
+
+    .checkbox-label {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .advanced-toggle {
+      font-size: 13px;
+      color: var(--accent-primary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px 0;
+      margin: 12px 0 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .advanced-toggle:hover {
+      text-decoration: underline;
+    }
+
+    .advanced-fields {
+      display: none;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border-color);
+      margin-top: 6px;
+    }
+
+    .advanced-fields.open {
+      display: block;
+    }
+
+    .test-result-box {
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .test-result-box.success {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+
+    .test-result-box.error {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+
+    .modal-footer {
+      padding: 16px 24px 20px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* Test Connection Detail Modal */
+    .bot-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .detail-item {
+      background: var(--bg-input);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .detail-item .lbl {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .detail-item .val {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      color: var(--text-main);
+      font-size: 13.5px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 280px;
+      max-width: 420px;
+      pointer-events: auto;
+      transform: translateY(10px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-left: 4px solid var(--accent-success); }
+    .toast.error { border-left: 4px solid var(--accent-danger); }
+    .toast.info { border-left: 4px solid var(--accent-primary); }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 640px) {
+      .nav-container { padding: 12px 16px; }
+      main { padding: 20px 16px 40px; }
+      .bots-grid { grid-template-columns: 1fr; }
+      .radio-card-grid { grid-template-columns: 1fr; }
+      .search-input-wrap { max-width: 100%; }
+      .bot-detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header>
+    <div class="nav-container">
+      <a href="/admin" class="brand">
+        <div class="brand-icon">
+          <!-- Telegram Plane SVG -->
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .37z"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>
+            Support Chat
+            <span class="brand-badge">Админ-панель</span>
+          </h1>
+        </div>
+      </a>
+
+      <nav class="nav-links">
+        <a href="/admin" class="nav-link active">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+            <circle cx="12" cy="5" r="2"></circle>
+            <path d="M12 7v4"></path>
+            <line x1="8" y1="16" x2="8" y2="16"></line>
+            <line x1="16" y1="16" x2="16" y2="16"></line>
+          </svg>
+          Боты
+        </a>
+        <a href="/demo.html" target="_blank" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          Демо виджета
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Stats Row -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+            <circle cx="12" cy="5" r="2"></circle>
+            <path d="M12 7v4"></path>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Всего Telegram ботов</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-active">0</div>
+          <div class="stat-label">Активных ботов</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon tg">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="stat-default" style="font-size: 15px;">—</div>
+          <div class="stat-label">Основной бот поддержки</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <div class="search-filter-group">
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="search-input" class="search-input" placeholder="Поиск по названию или @username..." oninput="handleSearch(this.value)">
+        </div>
+
+        <div class="filter-pills">
+          <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">Все</button>
+          <button class="filter-btn" data-filter="active" onclick="setFilter('active')">Активные</button>
+          <button class="filter-btn" data-filter="inactive" onclick="setFilter('inactive')">Отключенные</button>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-secondary btn-icon" onclick="loadBots()" title="Обновить список">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Добавить бота
+        </button>
+      </div>
+    </div>
+
+    <!-- Bots Grid -->
+    <div id="bots-grid" class="bots-grid">
+      <!-- Dynamically filled by JavaScript -->
+    </div>
+
+    <!-- Instructions / Setup Guide Accordion -->
+    <div class="guide-section">
+      <div class="guide-header" onclick="toggleGuide()">
+        <div class="guide-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          Справка: Как настроить Telegram-бота для группы поддержки
+        </div>
+        <span id="guide-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </span>
+      </div>
+      <div id="guide-content" class="guide-content">
+        <div class="guide-steps">
+          <div class="guide-step">
+            <span class="step-num">1</span>
+            <div class="step-title">Создайте бота</div>
+            <div class="step-desc">
+              Откройте <a href="https://t.me/BotFather" target="_blank">@BotFather</a> в Telegram, отправьте <code>/newbot</code>, задайте имя и username. Скопируйте полученный <b>Bot Token</b>.
+            </div>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">2</span>
+            <div class="step-title">Создайте группу с темами</div>
+            <div class="step-desc">
+              Создайте супергруппу в Telegram и включите <b>«Темы» (Topics / Forums)</b> в настройках группы. Это позволит разделять обращения пользователей по отдельным веткам.
+            </div>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">3</span>
+            <div class="step-title">Сделайте бота админом</div>
+            <div class="step-desc">
+              Добавьте созданного бота в группу и назначьте его <b>Администратором</b> с правами управления темами и отправки сообщений.
+            </div>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">4</span>
+            <div class="step-title">Узнайте Chat ID группы</div>
+            <div class="step-desc">
+              Добавьте в группу бота <a href="https://t.me/RawDataBot" target="_blank">@RawDataBot</a> или <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a>. Скопируйте Chat ID (начинается с <code>-100...</code>), после чего удалите инфо-бота.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add / Edit Modal -->
+  <div id="bot-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+            <circle cx="12" cy="5" r="2"></circle>
+            <path d="M12 7v4"></path>
+          </svg>
+          Добавить Telegram-бота
+        </div>
+        <button class="modal-close" onclick="closeModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="bot-form" onsubmit="handleFormSubmit(event)">
+        <div class="modal-body">
+          <input type="hidden" id="form-bot-id">
+
+          <!-- Bot Token with Inline Test -->
+          <div class="form-group">
+            <label class="form-label" for="form-token">
+              Telegram Bot Token <span class="req">*</span>
+            </label>
+            <div class="input-with-button">
+              <input type="text" id="form-token" class="form-input" placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ" required autocomplete="off">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-test-token" onclick="testTokenInline()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                Проверить
+              </button>
+            </div>
+            <div class="form-hint">Токен, выданный @BotFather при создании бота</div>
+            
+            <!-- Inline Test Result Box -->
+            <div id="token-test-result" class="test-result-box"></div>
+          </div>
+
+          <!-- Bot Name -->
+          <div class="form-group">
+            <label class="form-label" for="form-name">
+              Название бота <span class="req">*</span>
+            </label>
+            <input type="text" id="form-name" class="form-input" placeholder="например: Основная служба заботы" required>
+            <div class="form-hint">Отображаемое имя бота в административной панели</div>
+          </div>
+
+          <!-- Telegram Group Chat ID -->
+          <div class="form-group">
+            <label class="form-label" for="form-chat-id">
+              Chat ID группы операторов <span class="req">*</span>
+            </label>
+            <input type="text" id="form-chat-id" class="form-input" placeholder="-1001234567890" required pattern="-?[0-9]+" autocomplete="off">
+            <div class="form-hint">ID супергруппы в Telegram (обычно начинается с <code>-100...</code>)</div>
+          </div>
+
+          <!-- Mode Radio Selection -->
+          <div class="form-group">
+            <label class="form-label">Режим получения сообщений</label>
+            <div class="radio-card-grid">
+              <label class="radio-card selected" id="card-mode-polling" onclick="selectMode('polling')">
+                <input type="radio" name="mode" value="polling" checked>
+                <div>
+                  <div class="radio-card-title">⚡ Long Polling</div>
+                  <div class="radio-card-desc">Рекомендуется. Не требует домена и SSL, работает везде.</div>
+                </div>
+              </label>
+
+              <label class="radio-card" id="card-mode-webhook" onclick="selectMode('webhook')">
+                <input type="radio" name="mode" value="webhook">
+                <div>
+                  <div class="radio-card-title">🌐 Webhook</div>
+                  <div class="radio-card-desc">Моментально. Требует публичный домен с валидным HTTPS.</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Webhook URL (Conditional) -->
+          <div class="form-group" id="group-webhook-url" style="display: none;">
+            <label class="form-label" for="form-webhook-url">
+              URL Вебхука (Webhook URL)
+            </label>
+            <input type="url" id="form-webhook-url" class="form-input" placeholder="https://chat.yourdomain.com/api/v1/support/telegram/webhook">
+            <div class="form-hint">Публичный HTTPS URL вашего сервиса, куда Telegram будет слать обновления</div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label class="form-label" for="form-desc">Описание / Заметки</label>
+            <textarea id="form-desc" class="form-textarea" placeholder="Где используется этот бот, для какого сайта или отдела..."></textarea>
+          </div>
+
+          <!-- Advanced Settings Collapsible -->
+          <button type="button" class="advanced-toggle" onclick="toggleAdvanced()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span id="adv-text">Дополнительные параметры (Base URL, Прокси)</span>
+          </button>
+
+          <div id="advanced-fields" class="advanced-fields">
+            <div class="form-group">
+              <label class="form-label" for="form-base-url">Telegram API Base URL</label>
+              <input type="text" id="form-base-url" class="form-input" placeholder="https://api.telegram.org">
+              <div class="form-hint">По умолчанию <code>https://api.telegram.org</code> (локальный Telegram Bot API сервер)</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="form-proxy">HTTP / SOCKS5 Прокси</label>
+              <input type="text" id="form-proxy" class="form-input" placeholder="http://user:password@proxy.example.com:8080">
+              <div class="form-hint">Если Telegram заблокирован в сети вашего сервера</div>
+            </div>
+          </div>
+
+          <!-- Checkboxes -->
+          <label class="checkbox-group">
+            <input type="checkbox" id="form-is-active" checked>
+            <span class="checkbox-label">Бот активен (включен)</span>
+          </label>
+
+          <label class="checkbox-group">
+            <input type="checkbox" id="form-is-default">
+            <span class="checkbox-label">Сделать основным ботом по умолчанию</span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-bot">
+            Сохранить бота
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Test Bot Details Modal -->
+  <div id="test-modal" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#34d399">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Результаты проверки Telegram-бота
+        </div>
+        <button class="modal-close" onclick="closeTestModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+          Соединение с Telegram API успешно установлено. Информация о боте:
+        </p>
+
+        <div class="bot-detail-grid">
+          <div class="detail-item">
+            <div class="lbl">Имя бота</div>
+            <div class="val" id="test-bot-name">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="lbl">Username</div>
+            <div class="val" id="test-bot-username">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="lbl">Telegram Bot ID</div>
+            <div class="val" id="test-bot-id">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="lbl">Добавление в группы</div>
+            <div class="val" id="test-bot-groups">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="lbl">Чтение сообщений</div>
+            <div class="val" id="test-bot-privacy">—</div>
+          </div>
+          <div class="detail-item">
+            <div class="lbl">Время отклика</div>
+            <div class="val" id="test-bot-latency">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="closeTestModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // State
+    let bots = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+    const visibleTokens = new Set();
+
+    // DOM Ready
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBots();
+    });
+
+    // Load Bots from API
+    async function loadBots() {
+      try {
+        const res = await fetch('/api/v1/admin/bots');
+        if (!res.ok) throw new Error('Ошибка сервера при загрузке ботов');
+        const data = await res.json();
+        bots = data.bots || [];
+        updateStats();
+        renderBots();
+      } catch (err) {
+        showToast(err.message, 'error');
+        renderBots();
+      }
+    }
+
+    // Update Statistics
+    function updateStats() {
+      const total = bots.length;
+      const active = bots.filter(b => b.is_active).length;
+      const defaultBot = bots.find(b => b.is_default);
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-active').textContent = active;
+      
+      const defaultEl = document.getElementById('stat-default');
+      if (defaultBot) {
+        defaultEl.textContent = defaultBot.username ? `@${defaultBot.username}` : defaultBot.name;
+      } else {
+        defaultEl.textContent = 'Не назначен';
+      }
+    }
+
+    // Render Bots
+    function renderBots() {
+      const container = document.getElementById('bots-grid');
+      container.innerHTML = '';
+
+      let filtered = bots.filter(b => {
+        if (currentFilter === 'active') return b.is_active;
+        if (currentFilter === 'inactive') return !b.is_active;
+        return true;
+      });
+
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(b => 
+          (b.name && b.name.toLowerCase().includes(q)) ||
+          (b.username && b.username.toLowerCase().includes(q)) ||
+          (b.description && b.description.toLowerCase().includes(q)) ||
+          String(b.chat_id).includes(q)
+        );
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                <circle cx="12" cy="5" r="2"></circle>
+                <path d="M12 7v4"></path>
+              </svg>
+            </div>
+            <div class="empty-title">${searchQuery ? 'Ничего не найдено' : 'Боты пока не добавлены'}</div>
+            <div class="empty-desc">
+              ${searchQuery ? 'Попробуйте изменить поисковый запрос' : 'Добавьте вашего первого Telegram-бота для службы поддержки, чтобы операторы могли отвечать клиентам прямо из Telegram!'}
+            </div>
+            ${!searchQuery ? `
+              <button class="btn btn-primary" onclick="openAddModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Добавить бота
+              </button>
+            ` : ''}
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(bot => {
+        const card = createBotCard(bot);
+        container.appendChild(card);
+      });
+    }
+
+    // Create Card Element
+    function createBotCard(bot) {
+      const card = document.createElement('div');
+      card.className = `bot-card ${bot.is_default ? 'is-default' : ''} ${!bot.is_active ? 'is-inactive' : ''}`;
+      
+      const isTokenVisible = visibleTokens.has(bot.id);
+      const maskedToken = isTokenVisible ? escapeHtml(bot.token) : maskToken(bot.token);
+
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="bot-avatar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .37z"/>
+            </svg>
+          </div>
+          <div class="bot-title-area">
+            <div class="bot-name" title="${escapeHtml(bot.name)}">
+              ${escapeHtml(bot.name)}
+            </div>
+            ${bot.username ? `
+              <a href="https://t.me/${escapeHtml(bot.username)}" target="_blank" class="bot-username" title="Открыть в Telegram">
+                @${escapeHtml(bot.username)}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+              </a>
+            ` : '<div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">Username не определен</div>'}
+            
+            <div class="badges-row">
+              ${bot.is_default ? '<span class="badge badge-default">⭐ Основной</span>' : ''}
+              <span class="badge ${bot.is_active ? 'badge-active' : 'badge-inactive'}">
+                ${bot.is_active ? '● Активен' : '○ Отключен'}
+              </span>
+              <span class="badge ${bot.mode === 'webhook' ? 'badge-webhook' : 'badge-polling'}">
+                ${bot.mode === 'webhook' ? '🌐 Webhook' : '⚡ Polling'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-fields">
+          <div class="field-row">
+            <span class="field-label">Chat ID группы:</span>
+            <div class="field-val">
+              <span>${escapeHtml(String(bot.chat_id))}</span>
+              <button class="inline-btn" title="Скопировать Chat ID" onclick="copyText('${escapeHtml(String(bot.chat_id))}', 'Chat ID скопирован')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <span class="field-label">Bot Token:</span>
+            <div class="field-val">
+              <span class="token-text" id="token-val-${bot.id}">${maskedToken}</span>
+              <button class="inline-btn" title="${isTokenVisible ? 'Скрыть токен' : 'Показать токен'}" onclick="toggleToken('${bot.id}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  ${isTokenVisible 
+                    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>' 
+                    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>'
+                  }
+                </svg>
+              </button>
+              <button class="inline-btn" title="Скопировать токен" onclick="copyText('${escapeHtml(bot.token)}', 'Токен скопирован')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          ${bot.mode === 'webhook' && bot.webhook_url ? `
+            <div class="field-row">
+              <span class="field-label">Webhook URL:</span>
+              <div class="field-val" title="${escapeHtml(bot.webhook_url)}">
+                ${escapeHtml(bot.webhook_url)}
+              </div>
+            </div>
+          ` : ''}
+
+          ${bot.base_url && bot.base_url !== 'https://api.telegram.org' ? `
+            <div class="field-row">
+              <span class="field-label">Base URL:</span>
+              <div class="field-val">${escapeHtml(bot.base_url)}</div>
+            </div>
+          ` : ''}
+        </div>
+
+        ${bot.description ? `
+          <div class="bot-desc">${escapeHtml(bot.description)}</div>
+        ` : ''}
+
+        <div class="card-footer">
+          <div class="footer-left">
+            <button class="btn btn-secondary btn-sm" onclick="testSavedBot('${bot.id}', this)" title="Проверить соединение с Telegram API">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              Проверить
+            </button>
+            
+            ${!bot.is_default ? `
+              <button class="btn btn-secondary btn-sm" onclick="setDefaultBot('${bot.id}')" title="Сделать основным ботом">
+                ⭐ Основной
+              </button>
+            ` : ''}
+          </div>
+
+          <div class="footer-right">
+            <button class="btn btn-secondary btn-icon btn-sm" onclick="toggleActiveBot('${bot.id}')" title="${bot.is_active ? 'Отключить' : 'Включить'}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${bot.is_active ? '#34d399' : '#94a3b8'}" stroke-width="2">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                <line x1="12" y1="2" x2="12" y2="12"></line>
+              </svg>
+            </button>
+
+            <button class="btn btn-secondary btn-icon btn-sm" onclick="openEditModal('${bot.id}')" title="Редактировать">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+
+            <button class="btn btn-secondary btn-icon btn-sm" onclick="deleteBot('${bot.id}', '${escapeHtml(bot.name)}')" title="Удалить" style="color: #f87171;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      `;
+
+      return card;
+    }
+
+    // Mask Token Helper
+    function maskToken(token) {
+      if (!token) return '';
+      const parts = token.split(':');
+      if (parts.length === 2) {
+        return parts[0] + ':••••••••••••';
+      }
+      return token.slice(0, 6) + '••••••••••••';
+    }
+
+    // Toggle Token Mask
+    function toggleToken(botId) {
+      if (visibleTokens.has(botId)) {
+        visibleTokens.delete(botId);
+      } else {
+        visibleTokens.add(botId);
+      }
+      renderBots();
+    }
+
+    // Filter Buttons
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+      });
+      renderBots();
+    }
+
+    // Search
+    function handleSearch(val) {
+      searchQuery = val.trim();
+      renderBots();
+    }
+
+    // Open Add Modal
+    function openAddModal() {
+      document.getElementById('modal-title').innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Добавить Telegram-бота
+      `;
+      document.getElementById('form-bot-id').value = '';
+      document.getElementById('form-name').value = '';
+      document.getElementById('form-token').value = '';
+      document.getElementById('form-chat-id').value = '';
+      document.getElementById('form-desc').value = '';
+      document.getElementById('form-webhook-url').value = '';
+      document.getElementById('form-base-url').value = '';
+      document.getElementById('form-proxy').value = '';
+      document.getElementById('form-is-active').checked = true;
+      document.getElementById('form-is-default').checked = bots.length === 0;
+
+      selectMode('polling');
+      resetTokenTestResult();
+
+      const adv = document.getElementById('advanced-fields');
+      adv.classList.remove('open');
+
+      document.getElementById('bot-modal').classList.add('open');
+    }
+
+    // Open Edit Modal
+    function openEditModal(botId) {
+      const bot = bots.find(b => b.id === botId);
+      if (!bot) return;
+
+      document.getElementById('modal-title').innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        Редактировать бота: ${escapeHtml(bot.name)}
+      `;
+      document.getElementById('form-bot-id').value = bot.id;
+      document.getElementById('form-name').value = bot.name || '';
+      document.getElementById('form-token').value = bot.token || '';
+      document.getElementById('form-chat-id').value = bot.chat_id || '';
+      document.getElementById('form-desc').value = bot.description || '';
+      document.getElementById('form-webhook-url').value = bot.webhook_url || '';
+      document.getElementById('form-base-url').value = (bot.base_url && bot.base_url !== 'https://api.telegram.org') ? bot.base_url : '';
+      document.getElementById('form-proxy').value = bot.proxy || '';
+      document.getElementById('form-is-active').checked = !!bot.is_active;
+      document.getElementById('form-is-default').checked = !!bot.is_default;
+
+      selectMode(bot.mode || 'polling');
+      resetTokenTestResult();
+
+      if (bot.base_url || bot.proxy) {
+        document.getElementById('advanced-fields').classList.add('open');
+      }
+
+      document.getElementById('bot-modal').classList.add('open');
+    }
+
+    // Close Modal
+    function closeModal() {
+      document.getElementById('bot-modal').classList.remove('open');
+    }
+
+    // Select Polling or Webhook
+    function selectMode(mode) {
+      document.getElementById('card-mode-polling').classList.toggle('selected', mode === 'polling');
+      document.getElementById('card-mode-webhook').classList.toggle('selected', mode === 'webhook');
+      
+      const webhookCardInput = document.querySelector('input[name="mode"][value="webhook"]');
+      const pollingCardInput = document.querySelector('input[name="mode"][value="polling"]');
+      if (mode === 'webhook') webhookCardInput.checked = true;
+      else pollingCardInput.checked = true;
+
+      document.getElementById('group-webhook-url').style.display = mode === 'webhook' ? 'block' : 'none';
+    }
+
+    // Toggle Advanced Fields
+    function toggleAdvanced() {
+      const el = document.getElementById('advanced-fields');
+      el.classList.toggle('open');
+    }
+
+    // Reset Token Test Result Box
+    function resetTokenTestResult() {
+      const box = document.getElementById('token-test-result');
+      box.className = 'test-result-box';
+      box.innerHTML = '';
+      box.style.display = 'none';
+    }
+
+    // Inline Test Token
+    async function testTokenInline() {
+      const token = document.getElementById('form-token').value.trim();
+      const baseURL = document.getElementById('form-base-url').value.trim();
+      const proxy = document.getElementById('form-proxy').value.trim();
+      const box = document.getElementById('token-test-result');
+      const btn = document.getElementById('btn-test-token');
+
+      if (!token) {
+        box.className = 'test-result-box error';
+        box.innerHTML = `<span>⚠️ Пожалуйста, введите токен бота</span>`;
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span> Проверка...`;
+
+      try {
+        const res = await fetch('/api/v1/admin/bots/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, base_url: baseURL, proxy })
+        });
+        const data = await res.json();
+
+        if (data.ok && data.user) {
+          box.className = 'test-result-box success';
+          box.innerHTML = `
+            <div>
+              <strong>✅ Токен действителен!</strong><br>
+              Бот: <b>@${escapeHtml(data.user.username || '—')}</b> (${escapeHtml(data.user.first_name || 'Без имени')})<br>
+              ID: <code>${data.user.id}</code>
+            </div>
+          `;
+          // Auto fill name if empty
+          const nameInput = document.getElementById('form-name');
+          if (!nameInput.value.trim() && data.user.first_name) {
+            nameInput.value = data.user.first_name;
+          }
+        } else {
+          box.className = 'test-result-box error';
+          box.innerHTML = `<span>❌ Ошибка проверки: ${escapeHtml(data.error || 'Недействительный токен')}</span>`;
+        }
+      } catch (err) {
+        box.className = 'test-result-box error';
+        box.innerHTML = `<span>❌ Ошибка соединения: ${escapeHtml(err.message)}</span>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          Проверить
+        `;
+      }
+    }
+
+    // Submit Bot Form (Create or Update)
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const botId = document.getElementById('form-bot-id').value;
+      const saveBtn = document.getElementById('btn-save-bot');
+
+      const name = document.getElementById('form-name').value.trim();
+      const token = document.getElementById('form-token').value.trim();
+      const chatIDStr = document.getElementById('form-chat-id').value.trim();
+      const chatID = parseInt(chatIDStr, 10);
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      const webhookURL = document.getElementById('form-webhook-url').value.trim();
+      const description = document.getElementById('form-desc').value.trim();
+      const baseURL = document.getElementById('form-base-url').value.trim();
+      const proxy = document.getElementById('form-proxy').value.trim();
+      const isActive = document.getElementById('form-is-active').checked;
+      const isDefault = document.getElementById('form-is-default').checked;
+
+      if (!name || !token || isNaN(chatID)) {
+        showToast('Пожалуйста, заполните все обязательные поля корректно', 'error');
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = `<span class="spinner"></span> Сохранение...`;
+
+      try {
+        let res;
+        if (botId) {
+          // Update
+          res = await fetch(`/api/v1/admin/bots/${botId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name,
+              token,
+              chat_id: chatID,
+              mode,
+              webhook_url: webhookURL,
+              description,
+              base_url: baseURL,
+              proxy,
+              is_active: isActive,
+              is_default: isDefault
+            })
+          });
+        } else {
+          // Create
+          res = await fetch('/api/v1/admin/bots', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name,
+              token,
+              chat_id: chatID,
+              mode,
+              webhook_url: webhookURL,
+              description,
+              base_url: baseURL,
+              proxy,
+              is_active: isActive,
+              is_default: isDefault
+            })
+          });
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Не удалось сохранить бота');
+        }
+
+        closeModal();
+        showToast(botId ? 'Бот успешно обновлен!' : 'Бот успешно добавлен!', 'success');
+        await loadBots();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = 'Сохранить бота';
+      }
+    }
+
+    // Test Saved Bot
+    async function testSavedBot(botId, btn) {
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span>`;
+
+      const startTime = performance.now();
+      try {
+        const res = await fetch(`/api/v1/admin/bots/${botId}/test`, { method: 'POST' });
+        const latency = Math.round(performance.now() - startTime);
+        const data = await res.json();
+
+        if (data.ok && data.user) {
+          document.getElementById('test-bot-name').textContent = data.user.first_name || '—';
+          document.getElementById('test-bot-username').textContent = data.user.username ? `@${data.user.username}` : '—';
+          document.getElementById('test-bot-id').textContent = data.user.id || '—';
+          document.getElementById('test-bot-groups').textContent = data.user.can_join_groups ? '✅ Разрешено' : '❌ Запрещено';
+          document.getElementById('test-bot-privacy').textContent = data.user.can_read_all_group_messages ? 'Все сообщения' : 'Только команды';
+          document.getElementById('test-bot-latency').textContent = `${latency} мс`;
+
+          document.getElementById('test-modal').classList.add('open');
+        } else {
+          showToast(`Ошибка проверки бота: ${data.error || 'Связь не удалась'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`Ошибка соединения: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+
+    function closeTestModal() {
+      document.getElementById('test-modal').classList.remove('open');
+    }
+
+    // Set Default Bot
+    async function setDefaultBot(botId) {
+      try {
+        const res = await fetch(`/api/v1/admin/bots/${botId}/default`, { method: 'POST' });
+        if (!res.ok) throw new Error('Не удалось сделать бота основным');
+        showToast('Бот назначен основным по умолчанию', 'success');
+        await loadBots();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Toggle Active Status
+    async function toggleActiveBot(botId) {
+      try {
+        const res = await fetch(`/api/v1/admin/bots/${botId}/toggle`, { method: 'POST' });
+        if (!res.ok) throw new Error('Не удалось изменить статус бота');
+        showToast('Статус бота обновлен', 'success');
+        await loadBots();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Delete Bot
+    async function deleteBot(botId, botName) {
+      if (!confirm(`Вы действительно хотите удалить бота "${botName}"?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/v1/admin/bots/${botId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Не удалось удалить бота');
+        showToast(`Бот "${botName}" удален`, 'info');
+        await loadBots();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Copy Helper
+    function copyText(text, successMsg) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(successMsg, 'info');
+        });
+      } else {
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showToast(successMsg, 'info');
+      }
+    }
+
+    // Show Toast
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      let icon = '';
+      if (type === 'success') {
+        icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+      } else if (type === 'error') {
+        icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+      } else {
+        icon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+      }
+
+      toast.innerHTML = `${icon}<span>${escapeHtml(msg)}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Toggle Guide
+    function toggleGuide() {
+      const content = document.getElementById('guide-content');
+      const isOpen = content.classList.toggle('open');
+      document.getElementById('guide-arrow').style.transform = isOpen ? 'rotate(180deg)' : '';
+    }
+
+    // HTML Escape Helper
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
