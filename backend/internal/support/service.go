@@ -689,9 +689,13 @@ func (s *Service) ReloadTelegram(ctx context.Context) {
 	defer s.mu.Unlock()
 
 	if err == nil && activeBot.Token != "" && activeBot.ChatID != 0 {
-		tg := NewTelegram(activeBot.Token, activeBot.ChatID, activeBot.BaseURL, activeBot.Proxy)
+		proxy := activeBot.Proxy
+		if proxy == "" {
+			proxy = s.cfg.TelegramProxy
+		}
+		tg := NewTelegram(activeBot.Token, activeBot.ChatID, activeBot.BaseURL, proxy)
 		s.tg = tg
-		log.Printf("support: telegram client reloaded for bot %q (@%s, group %d)", activeBot.Name, activeBot.Username, activeBot.ChatID)
+		log.Printf("support: telegram client reloaded for bot %q (@%s, group %d, proxy=%q)", activeBot.Name, activeBot.Username, activeBot.ChatID, proxy)
 
 		if activeBot.Mode == "webhook" && activeBot.WebhookURL != "" {
 			go func() {
@@ -755,8 +759,12 @@ func (s *Service) CreateBot(ctx context.Context, in CreateBotInput) (*db.Bot, er
 	webhookURL := strings.TrimSpace(in.WebhookURL)
 
 	var username, firstName string
+	checkProxy := proxy
+	if checkProxy == "" {
+		checkProxy = s.cfg.TelegramProxy
+	}
 	// Test bot token with Telegram
-	if u, err := CheckBotCredentials(ctx, in.Token, baseURL, proxy); err == nil && u != nil {
+	if u, err := CheckBotCredentials(ctx, in.Token, baseURL, checkProxy); err == nil && u != nil {
 		username = u.Username
 		firstName = u.FirstName
 	}
@@ -851,7 +859,11 @@ func (s *Service) UpdateBot(ctx context.Context, id string, in UpdateBotInput) (
 	}
 
 	if tokenChanged {
-		if u, err := CheckBotCredentials(ctx, b.Token, b.BaseURL, b.Proxy); err == nil && u != nil {
+		checkProxy := b.Proxy
+		if checkProxy == "" {
+			checkProxy = s.cfg.TelegramProxy
+		}
+		if u, err := CheckBotCredentials(ctx, b.Token, b.BaseURL, checkProxy); err == nil && u != nil {
 			b.Username = u.Username
 			b.FirstName = u.FirstName
 		}
@@ -932,6 +944,9 @@ func (s *Service) ToggleBotActive(ctx context.Context, id string) (*db.Bot, erro
 
 // TestBotConfig checks credentials without saving.
 func (s *Service) TestBotConfig(ctx context.Context, token, base, proxy string) (*TelegramUser, error) {
+	if proxy == "" {
+		proxy = s.cfg.TelegramProxy
+	}
 	return CheckBotCredentials(ctx, token, base, proxy)
 }
 
@@ -942,7 +957,11 @@ func (s *Service) TestBotByID(ctx context.Context, id string) (*TelegramUser, er
 		return nil, err
 	}
 
-	u, err := CheckBotCredentials(ctx, b.Token, b.BaseURL, b.Proxy)
+	proxy := b.Proxy
+	if proxy == "" {
+		proxy = s.cfg.TelegramProxy
+	}
+	u, err := CheckBotCredentials(ctx, b.Token, b.BaseURL, proxy)
 	if err != nil {
 		return nil, err
 	}

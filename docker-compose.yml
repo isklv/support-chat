@@ -18,7 +18,11 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
       - TELEGRAM_MODE=${TELEGRAM_MODE:-polling} # polling (default, works locally without domain) or webhook
+      - TELEGRAM_PROXY=${TELEGRAM_PROXY:-}
+      - TELEGRAM_BASE_URL=${TELEGRAM_BASE_URL:-https://api.telegram.org}
       - WEBHOOK_URL=${WEBHOOK_URL:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - HTTP_PROXY=${HTTP_PROXY:-}
       # Optional: SMTP for user reply notifications
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-587}

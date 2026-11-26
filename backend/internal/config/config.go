@@ -67,6 +67,14 @@ func Load() *Config {
 
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
 
+	telegramProxy := getEnv("TELEGRAM_PROXY", "")
+	if telegramProxy == "" {
+		telegramProxy = getEnv("HTTPS_PROXY", "")
+		if telegramProxy == "" {
+			telegramProxy = getEnv("HTTP_PROXY", "")
+		}
+	}
+
 	return &Config{
 		Port:             port,
 		DBDriver:         dbDriver,
@@ -77,7 +85,7 @@ func Load() *Config {
 		TelegramBotToken: botToken,
 		TelegramChatID:   chatID,
 		TelegramBaseURL:  getEnv("TELEGRAM_BASE_URL", "https://api.telegram.org"),
-		TelegramProxy:    getEnv("TELEGRAM_PROXY", ""),
+		TelegramProxy:    telegramProxy,
 		TelegramMode:     telegramMode,
 		WebhookURL:       webhookURL,
 		SMTPHost:         getEnv("SMTP_HOST", ""),
