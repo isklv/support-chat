@@ -1,6 +1,6 @@
 module support-chat
 
-go 1.26.8
+go 1.25.0
 
 require (
 	github.com/glebarez/sqlite v1.11.0

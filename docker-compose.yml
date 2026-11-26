@@ -6,10 +6,10 @@ services:
     container_name: support-chat
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${HOST_PORT:-8082}:8080"
     environment:
       - PORT=8080
-      - APP_URL=http://localhost:8080
+      - APP_URL=${APP_URL:-http://localhost:8082}
       - DB_DRIVER=sqlite
       - DB_DSN=/app/data/support.db
       - STATIC_DIR=/app/static

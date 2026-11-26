@@ -8,7 +8,7 @@ COPY widget/ ./
 RUN pnpm build
 
 # 2. Build backend binary
-FROM golang:1.23-alpine AS backend-builder
+FROM golang:alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/go.mod backend/go.sum* ./
 RUN go mod download
